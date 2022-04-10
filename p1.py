@@ -2,7 +2,7 @@ import h5py as h5
 import numpy as np
 MAXID = 70355200
 print("Start..")
-target = h5.File("./Dump0406.hdf5", 'w')
+target = h5.File("./Dump0410.hdf5", 'w')
 target.create_group('Titles')
 g = target['Titles']
 arr = g.create_dataset('idToTitle', data=np.full(MAXID, '???',dtype=object))
@@ -20,4 +20,6 @@ for i in range(linesSize):
     d[title] = id
 #g.create_dataset('titleToId', data=np.array([str(d)] ,dtype=object))
 g.attrs.create('titleToId', data=str(d))
+target.close()
 f.close()
+input("All complite..")
