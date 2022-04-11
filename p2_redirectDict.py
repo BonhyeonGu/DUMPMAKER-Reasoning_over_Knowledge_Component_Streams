@@ -7,7 +7,9 @@ for i in range(lineSize):
     #if i == 2652117 : continue
     x = lines[i].split(':')
     id = int(x[1].split('_')[1])
-    title = x[3].strip('_') 
+
+    title = lines[i].split('_namespace:_0_title:_')[1]
+    
     ret[id] = title.encode('utf-8')
 f1.close()
 
