@@ -20,6 +20,23 @@ def urlToTitle(keyword):
             print("\n" + keyword + " error")
     return -1
 
+def splitList(lis, splitCount):
+        if len(lis) <= splitCount:
+            return [lis]
+        ret = []
+        size = len(lis) // splitCount
+        tmp = []
+        idx = 0
+        for e in lis:
+            tmp.append(e)
+            idx += 1
+            if idx % size == 0:#0
+                ret.append(tmp)
+                tmp = []
+        ret.append(tmp)
+        return ret
+
+
 MAXID = 70355200
 print("Start..")
 #arr = g.create_dataset('idToTitle', data=np.full(MAXID, '???',dtype=object))
@@ -61,7 +78,11 @@ for i in range(1, len(pages)):
         print("\rProcess : p2 : %.4f%% : %.4f%%" % (i_per, (float(j)/lineCount) * 100), end="")
         words = lines[j].split('\t\t')
         anker_texts[j - 1] = words[1].encode('utf-8')
-        des_id = f3.readline().split('\t\t')[0]
+        a = f3.readline().split('\t\t')
+        if a[1] != (words[1]+'\n'):
+            print('!!!!!!!!!')
+        des_id = a[0]
+
         if des_id == 'CanNotFoundTitle':
             des_id = urlToTitle(words[0])
             if des_id == -1:#존재하지 않으면
@@ -69,7 +90,14 @@ for i in range(1, len(pages)):
                 continue
             des_id = des_id.replace(' ', '_')
             des_id = des_id[0].capitalize() + des_id [1:]
+            if des_id == 'Bad_title':#!!
+                nowSize -= 1
+                continue
             des_id = des_id.encode('utf-8')
+            if des_id not in titleToId_dict:#!!
+                nowSize -= 1
+                continue
+            print('\n'+ ' CrawOK ' + des_id.decode('utf-8') + ' ' + words[0])
             des_id = titleToId_dict[des_id]#문제사항!
         else:
             des_id = int(des_id)
