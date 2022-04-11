@@ -19,7 +19,8 @@ def urlToTitle(keyword):
             tag = soup.select_one('#firstHeading')
             return tag.text
         except Exception as e:
-            print("\n" + keyword + " error")
+            #print("\n" + keyword + " error")
+            e
     return -1
 
 def splitList(lis, splitCount):
@@ -68,6 +69,8 @@ def sub(pages:str, input_ids:list, ret_texts:dict, ret_ids:dict, ret_size:dict, 
             anker_texts[j - 1] = words[2].encode('utf-8')
             des_id = words[0]
             if des_id == 'CanNotFoundTitle':
+                nowSize -= 1
+                continue
                 des_id = urlToTitle(words[1])
                 if des_id == -1:#존재하지 않으면
                     nowSize -= 1
@@ -113,8 +116,8 @@ if __name__ == '__main__':
     print("Load f2 complite..")
 
     print("Start MultiProcess")
-    pages = pages[0:100]
-    pagess = splitList(pages, 12)
+    pages = pages[0:10000]
+    pagess = splitList(pages, 24)
     pros = []
 
     m = Manager()
@@ -122,7 +125,8 @@ if __name__ == '__main__':
     dictTexts = m.dict()
     dictIds = m.dict()
     dictSizes = m.dict()
-
+    print(len(pages))
+    print(len(pagess))
     for pages in pagess:
         pro = Process(target=sub, args=(pages, listInIds, dictTexts, dictIds, dictSizes, titleToId_dict, redirect_dict,))
         pro.daemon = True
@@ -143,16 +147,16 @@ if __name__ == '__main__':
     print('\nMerge and writing..')
 
     target = h5.File("./Dump0410.hdf5", 'r+')
-    target.create_group('Ankers')
+    #target.create_group('Ankers')
     g = target['Ankers']
     for id in listInIds:
         now = g.create_group(str(id))#가상경로
         now.attrs.create('size', data=dictSizes[id])
         if dictSizes[id]  == 0:
             continue
-        now.create_dataset('anker_texts', data=np.full(dictTexts[id], '?',dtype=object))
+        now.create_dataset('anker_texts', data=dictTexts[id])
         del(dictTexts[id])
-        now.create_dataset('anker_ids', data=np.full(dictIds[id], -1, dtype=np.int32))
+        now.create_dataset('anker_ids', data=dictIds[id])
         del(dictIds[id])
     target.close()
     input("\nAll complite..")
