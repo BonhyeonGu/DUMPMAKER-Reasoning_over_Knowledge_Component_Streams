@@ -1,8 +1,8 @@
-f1 = open("./Raw/03Ankers", 'r', encoding='UTF-8')
+f1 = open("./Raw/00Ankers", 'r', encoding='UTF-8')
 pages = f1.read().split('<')
 f1.close()
 print("Load f1 complite..")
-f2 = open("./Raw/03Ankers_Title_ID", 'r', encoding='UTF-8')
+f2 = open("./Raw/00Ankers_Title_ID", 'r', encoding='UTF-8')
 
 f4 = open("./Raw/03Ankers_Merge", 'w', encoding='UTF-8')
 for i in range(1, len(pages)):

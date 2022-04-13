@@ -13,7 +13,7 @@ for i in range(lineSize):
     ret[id] = title.encode('utf-8')
 f1.close()
 
-f2 = open("./Raw/00Redirects_dict", 'w', encoding='UTF-8')
+f2 = open("./Raw/03Redirects_dict", 'w', encoding='UTF-8')
 f2.write(str(ret))
 f2.close()
 print("All complite..")
