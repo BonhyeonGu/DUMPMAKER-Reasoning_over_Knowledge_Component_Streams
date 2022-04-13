@@ -1,10 +1,10 @@
-f1 = open("./Raw/02Ankers", 'r', encoding='UTF-8')
+f1 = open("./Raw/03Ankers", 'r', encoding='UTF-8')
 pages = f1.read().split('<')
 f1.close()
 print("Load f1 complite..")
-f2 = open("./Raw/02Ankers_Title_ID", 'r', encoding='UTF-8')
+f2 = open("./Raw/03Ankers_Title_ID", 'r', encoding='UTF-8')
 
-f4 = open("./Raw/02Ankers_Merge", 'w', encoding='UTF-8')
+f4 = open("./Raw/03Ankers_Merge", 'w', encoding='UTF-8')
 for i in range(1, len(pages)):
     lines = pages[i].split('\n')
     lineCount = len(lines) - 2#파일을 읽을때 읽어야 할 줄 개수, 햇갈리니까 주의
