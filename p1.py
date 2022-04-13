@@ -1,14 +1,21 @@
 import h5py as h5
 import numpy as np
-MAXID = 70355200
+MAXINDEX = 16331570
+MAXID = 70355180
 print("Start..")
-target = h5.File("./Dump0410.hdf5", 'w')
+target = h5.File("./Dump0413.hdf5", 'w')
 target.create_group('Titles')
 g = target['Titles']
+
+#emptyArr = np.full(MAXINDEX, -1, dtype=np.int32)
+#emptyArrIndex = 0
 arr = g.create_dataset('idToTitle', data=np.full(MAXID, '???',dtype=object))
+
 f = open("./Raw/01Titles", 'r', encoding='UTF-8')
 lines = f.read().split('\n')
+f.close()
 print("Page split complite..")
+
 linesSize = len(lines) - 1
 d = dict()
 for i in range(linesSize):
@@ -21,5 +28,4 @@ for i in range(linesSize):
 #g.create_dataset('titleToId', data=np.array([str(d)] ,dtype=object))
 g.attrs.create('titleToId', data=str(d))
 target.close()
-f.close()
 input("All complite..")
