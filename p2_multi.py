@@ -105,18 +105,18 @@ if __name__ == '__main__':
     target.close()
     print("Load Target complite..")
 
-    f1 = open("./Raw/04", 'r', encoding='UTF-8')
+    f1 = open("./Raw/02Ankers_Merge", 'r', encoding='UTF-8')
     pages = f1.read().split('<')
     f1.close()
     print("Load f1 complite..")
 
-    f2 = open("./Raw/03Redirects_dict", 'r', encoding='UTF-8')
+    f2 = open("./Raw/00Redirects_dict", 'r', encoding='UTF-8')
     redirect_dict = ast.literal_eval(f2.read())
     f2.close()
     print("Load f2 complite..")
 
     print("Start MultiProcess")
-    pages = pages[0:10000]
+    pages = pages[0:20000]
     pagess = splitList(pages, 24)
     pros = []
 
@@ -125,8 +125,7 @@ if __name__ == '__main__':
     dictTexts = m.dict()
     dictIds = m.dict()
     dictSizes = m.dict()
-    print(len(pages))
-    print(len(pagess))
+
     for pages in pagess:
         pro = Process(target=sub, args=(pages, listInIds, dictTexts, dictIds, dictSizes, titleToId_dict, redirect_dict,))
         pro.daemon = True
