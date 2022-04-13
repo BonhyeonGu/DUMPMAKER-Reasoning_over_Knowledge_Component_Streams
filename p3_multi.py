@@ -3,7 +3,7 @@ import numpy as np
 import ast
 import requests
 from bs4 import BeautifulSoup
-from multiprocessing import Process, freeze_support, Manager
+from multiprocessing import Process, freeze_support, Manager, Lock
 from multiprocessing.managers import DictProxy, ListProxy
 #from mpi4py import MPI
 
@@ -47,7 +47,7 @@ def unproxy_list(list_proxy):
         return {(list(v) if isinstance(v, ListProxy) else v)
             for  v in list_proxy}
 
-def sub(pages:str, input_ids:list, ret_texts:dict, ret_ids:dict, ret_size:dict, titleToId_dict:dict, redirect_dict:dict):
+def sub(pages:str, emptyIDs:list, emptyIDsIdx, emptyLock, emptyMap:dict, input_ids:list, ret_texts:dict, ret_ids:dict, ret_size:dict, titleToId_dict:dict, redirect_dict:dict):
     for i in range(1, len(pages)):
         #print("\rProcess : p2 : %.4f%%" % ((float(i)/len(pages)) * 100), end="")
         lines = pages[i].split('\n')
@@ -87,7 +87,15 @@ def sub(pages:str, input_ids:list, ret_texts:dict, ret_ids:dict, ret_size:dict, 
                 des_id = titleToId_dict[des_id]#문제사항!
             des_id = int(des_id)
             if des_id in redirect_dict:
-                des_id = titleToId_dict[redirect_dict[des_id]]
+                des_id = redirect_dict[des_id]#여기 des_id는 타이틀
+                if des_id in titleToId_dict:
+                    des_id = titleToId_dict[redirect_dict[des_id]]
+                else:#문제사항!!
+                    emptyLock.acquire()
+                    nowId = emptyIDs[emptyIDsIdx]
+                    emptyMap[nowId] = des_id
+                    emptyIDsIdx += 1
+                    emptyLock.release()
             anker_ids[j - 1] = des_id
         ret_texts[int(id)] = anker_texts
         ret_ids[int(id)] = anker_ids
@@ -105,7 +113,7 @@ if __name__ == '__main__':
     target.close()
     print("Load Target complite..")
 
-    f1 = open("./Raw/02Ankers_Merge", 'r', encoding='UTF-8')
+    f1 = open("./Raw/03_Ankers_Merge", 'r', encoding='UTF-8')
     pages = f1.read().split('<')
     f1.close()
     print("Load f1 complite..")
@@ -114,6 +122,8 @@ if __name__ == '__main__':
     redirect_dict = ast.literal_eval(f2.read())
     f2.close()
     print("Load f2 complite..")
+
+    emptyIDs = np.load('03EmptyIDs.npy')
 
     print("Start MultiProcess")
     pages = pages[0:20000]
@@ -126,8 +136,12 @@ if __name__ == '__main__':
     dictIds = m.dict()
     dictSizes = m.dict()
 
+    emptyIDsIdx = 0
+    emptyLock = Lock()
+    emptyMap = m.dict()
+
     for pages in pagess:
-        pro = Process(target=sub, args=(pages, listInIds, dictTexts, dictIds, dictSizes, titleToId_dict, redirect_dict,))
+        pro = Process(target=sub, args=(pages, emptyIDs, emptyIDsIdx, emptyLock, emptyMap, listInIds, dictTexts, dictIds, dictSizes, titleToId_dict, redirect_dict,))
         pro.daemon = True
         pro.start()
         pros.append(pro)
@@ -143,7 +157,15 @@ if __name__ == '__main__':
     dictTexts = unproxy_dict(dictTexts)
     dictIds = unproxy_dict(dictIds)
     dictSizes = unproxy_dict(dictSizes)
+    emptyMap = unproxy_dict(emptyMap)
     print('\nMerge and writing..')
+
+    emp = open("./Raw/04EmptyMap", 'w', encoding='UTF-8')
+    emp.write(str(emptyMap))
+    emp.close()
+    emp = open("./Raw/04EmptySize", 'w', encoding='UTF-8')
+    emp.write(str(emptyIDsIdx))
+    emp.close()
 
     target = h5.File("./Dump0410.hdf5", 'r+')
     target.create_group('Ankers')
