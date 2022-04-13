@@ -27,5 +27,7 @@ for i in range(linesSize):
     d[title] = id
 #g.create_dataset('titleToId', data=np.array([str(d)] ,dtype=object))
 g.attrs.create('titleToId', data=str(d))
+
+target.create_group('Ankers')
 target.close()
 input("All complite..")

@@ -146,7 +146,7 @@ if __name__ == '__main__':
     print('\nMerge and writing..')
 
     target = h5.File("./Dump0410.hdf5", 'r+')
-    #target.create_group('Ankers')
+    target.create_group('Ankers')
     g = target['Ankers']
     for id in listInIds:
         now = g.create_group(str(id))#가상경로
