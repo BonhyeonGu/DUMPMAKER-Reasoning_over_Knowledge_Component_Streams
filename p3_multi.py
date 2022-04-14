@@ -1,6 +1,7 @@
 import h5py as h5
 import numpy as np
 import ast
+from pkg_resources import compatible_platforms
 import requests
 from bs4 import BeautifulSoup
 from multiprocessing import Process, freeze_support, Manager, Lock
@@ -89,13 +90,14 @@ def sub(pages:str, emptyIDs:list, emptyIDsIdx, emptyLock, emptyMap:dict, input_i
             if des_id in redirect_dict:
                 des_id = redirect_dict[des_id]#여기 des_id는 타이틀
                 if des_id in titleToId_dict:
-                    des_id = titleToId_dict[redirect_dict[des_id]]
+                    des_id = titleToId_dict[des_id]
                 else:#문제사항!!
                     emptyLock.acquire()
                     nowId = emptyIDs[emptyIDsIdx]
-                    emptyMap[nowId] = des_id
+                    emptyMap[nowId] = des_id.encode('utf-8')
+                    des_id = nowId
                     emptyIDsIdx += 1
-                    emptyLock.release()
+                    emptyLock.release()        
             anker_ids[j - 1] = des_id
         ret_texts[int(id)] = anker_texts
         ret_ids[int(id)] = anker_ids
@@ -108,17 +110,17 @@ if __name__ == '__main__':
     print("Start..")
     #arr = g.create_dataset('idToTitle', data=np.full(MAXID, '???',dtype=object))
 
-    target = h5.File("./Dump0410.hdf5", 'r')
+    target = h5.File("./Dump0413.hdf5", 'r')
     titleToId_dict = ast.literal_eval(target['/Titles'].attrs['titleToId'])
     target.close()
     print("Load Target complite..")
 
-    f1 = open("./Raw/03_Ankers_Merge", 'r', encoding='UTF-8')
+    f1 = open("./Raw/03Ankers_Merge", 'r', encoding='UTF-8')
     pages = f1.read().split('<')
     f1.close()
     print("Load f1 complite..")
 
-    f2 = open("./Raw/00Redirects_dict", 'r', encoding='UTF-8')
+    f2 = open("./Raw/03Redirects_dict", 'r', encoding='UTF-8')
     redirect_dict = ast.literal_eval(f2.read())
     f2.close()
     print("Load f2 complite..")
@@ -149,7 +151,7 @@ if __name__ == '__main__':
     i = 0
     for pro in pros:
         pro.join()
-        print("\rProcess : p2 : %.4f%%" % ((float(i)/len(pros)) * 100), end="")
+        print("\rProcess : p3 : %.4f%%" % ((float(i)/len(pros)) * 100), end="")
         i += 1
     
     print('\nUnproxy..')
