@@ -29,5 +29,4 @@ edit : Dump
 
 ## 4:빈 페이지 사이즈 속성 0을 추가
 in : Dump, 04EmptyMap, 04EmptySize  
-out : 04EmptyMap, 04EmptySize  
 edit : Dump
