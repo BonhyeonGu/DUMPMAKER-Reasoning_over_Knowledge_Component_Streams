@@ -48,7 +48,7 @@ def unproxy_list(list_proxy):
         return {(list(v) if isinstance(v, ListProxy) else v)
             for  v in list_proxy}
 
-def sub(pages:str, emptyIDs:list, emptyIDsIdx, emptyLock, emptyMap:dict, input_ids:list, ret_texts:dict, ret_ids:dict, ret_size:dict, titleToId_dict:dict, redirect_dict:dict):
+def sub(pages:str, emptyIDs:list, emptyIDsIdx, emptyLock, emptyMap:dict, input_ids:list, ret_texts:dict, ret_ids:dict, ret_size:dict, titleToId_dict:dict):
     for i in range(1, len(pages)):
         #print("\rProcess : p2 : %.4f%%" % ((float(i)/len(pages)) * 100), end="")
         lines = pages[i].split('\n')
@@ -64,10 +64,9 @@ def sub(pages:str, emptyIDs:list, emptyIDsIdx, emptyLock, emptyMap:dict, input_i
 
         anker_texts = np.full(nowSize, '?',dtype=object)
         anker_ids = np.full(nowSize, -1, dtype=np.int32)
-
         for j in range(1, lineCount):
             words = lines[j].split('\t\t')
-            anker_texts[j - 1] = words[2].encode('utf-8')
+            anker_texts[j - 1] = words[1].encode('utf-8')
             des_id = words[0]
             if des_id == 'CanNotFoundTitle':
                 nowSize -= 1
@@ -86,18 +85,28 @@ def sub(pages:str, emptyIDs:list, emptyIDsIdx, emptyLock, emptyMap:dict, input_i
                     nowSize -= 1
                     continue
                 des_id = titleToId_dict[des_id]#문제사항!
-            des_id = int(des_id)
-            if des_id in redirect_dict:
-                des_id = redirect_dict[des_id]#여기 des_id는 타이틀
-                if des_id in titleToId_dict:
-                    des_id = titleToId_dict[des_id]
-                else:#문제사항!!
+            if des_id == 'ID_ERROR':#문제사항!
+                if words[1].encode('utf-8') in emptyMap:
+                    des_id = emptyMap[words[1].encode('utf-8')]#이미 아래작업을 해준적이 있으면 그냥 꺼내온다
+                else:
                     emptyLock.acquire()
-                    nowId = emptyIDs[emptyIDsIdx]
-                    emptyMap[nowId] = des_id.encode('utf-8')
-                    des_id = nowId
+                    nowId = emptyIDs[emptyIDsIdx]#배열에서 빼서 아이디 확보(정수)
+                    emptyMap[nowId] = words[1].encode('utf-8')#확보된 아이디를 키값으로 타이틀 저장
+                    des_id = nowId#확보된 아이디를 목표 아이디로 결정
                     emptyIDsIdx += 1
-                    emptyLock.release()        
+                    emptyLock.release()
+            des_id = int(des_id)
+            # if des_id in redirect_dict:
+            #     des_id = redirect_dict[des_id]#여기 des_id는 타이틀
+            #     if des_id in titleToId_dict:
+            #         des_id = titleToId_dict[des_id]
+            #     else:#문제사항!!
+            #         emptyLock.acquire()
+            #         nowId = emptyIDs[emptyIDsIdx]
+            #         emptyMap[nowId] = des_id.encode('utf-8')
+            #         des_id = nowId
+            #         emptyIDsIdx += 1
+            #         emptyLock.release()        
             anker_ids[j - 1] = des_id
         ret_texts[int(id)] = anker_texts
         ret_ids[int(id)] = anker_ids
@@ -115,20 +124,15 @@ if __name__ == '__main__':
     target.close()
     print("Load Target complite..")
 
-    f1 = open("./Raw/03Ankers_Merge", 'r', encoding='UTF-8')
+    f1 = open("./Raw/03Ankers_Merge_plus", 'r', encoding='UTF-8')
     pages = f1.read().split('<')
     f1.close()
     print("Load f1 complite..")
 
-    f2 = open("./Raw/03Redirects_dict", 'r', encoding='UTF-8')
-    redirect_dict = ast.literal_eval(f2.read())
-    f2.close()
-    print("Load f2 complite..")
-
-    emptyIDs = np.load('03EmptyIDs.npy')
+    emptyIDs = np.load('./Raw/03EmptyIDs.npy')
 
     print("Start MultiProcess")
-    pages = pages[0:20000]
+    pages = pages[1:]#0번째는 항상 버린다.
     pagess = splitList(pages, 24)
     pros = []
 
@@ -142,11 +146,14 @@ if __name__ == '__main__':
     emptyLock = Lock()
     emptyMap = m.dict()
 
+    i = 0
     for pages in pagess:
-        pro = Process(target=sub, args=(pages, emptyIDs, emptyIDsIdx, emptyLock, emptyMap, listInIds, dictTexts, dictIds, dictSizes, titleToId_dict, redirect_dict,))
+        print("\rProcess : p3 : %.4f%%" % ((float(i)/len(pagess)) * 100), end="")
+        pro = Process(target=sub, args=(pages, emptyIDs, emptyIDsIdx, emptyLock, emptyMap, listInIds, dictTexts, dictIds, dictSizes, titleToId_dict, ))
         pro.daemon = True
         pro.start()
         pros.append(pro)
+        i += 1
 
     i = 0
     for pro in pros:
@@ -169,17 +176,35 @@ if __name__ == '__main__':
     emp.write(str(emptyIDsIdx))
     emp.close()
 
-    target = h5.File("./Dump0410.hdf5", 'r+')
-    target.create_group('Ankers')
+    target = h5.File("./Dump0413.hdf5", 'r+')
+    #target.create_group('Ankers')
     g = target['Ankers']
+
+    print('\n\nWrite start..\n')
+    i = 0
     for id in listInIds:
+        print("\rProcess : p3 : %.4f%%" % ((float(i)/len(listInIds)) * 100), end="")
+
         now = g.create_group(str(id))#가상경로
-        now.attrs.create('size', data=dictSizes[id])
+        now.attrs['size'] = dictSizes[id]
+        #now.attrs.create('size', data=dictSizes[id])
         if dictSizes[id]  == 0:
             continue
-        now.create_dataset('anker_texts', data=dictTexts[id])
+
+        ##????
+        si = dictSizes[id]
+        anker_texts = now.create_dataset('anker_texts', data=np.full(si, '?',dtype=object))
+        anker_ids = now.create_dataset('anker_urls', data=np.full(si, -1, dtype=np.int32))
+        a1 = dictTexts[id]
+        a2 = dictIds[id]
+        for j in range(0, si):
+            anker_texts[j] = a1[j]
+            anker_ids[j] = a2[j]
+        #now.create_dataset('anker_texts', data=dictTexts[id], dtype=object)
+        #now.create_dataset('anker_ids', data=dictIds[id], dtype=np.int32)
         del(dictTexts[id])
-        now.create_dataset('anker_ids', data=dictIds[id])
         del(dictIds[id])
+        del(dictSizes[id])
+        i += 1
     target.close()
     input("\nAll complite..")
