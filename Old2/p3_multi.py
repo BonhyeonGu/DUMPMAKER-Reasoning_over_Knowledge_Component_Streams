@@ -6,6 +6,7 @@ import requests
 from bs4 import BeautifulSoup
 from multiprocessing import Process, freeze_support, Manager, Lock
 from multiprocessing.managers import DictProxy, ListProxy
+import gc
 #from mpi4py import MPI
 
 def urlToTitle(keyword):
@@ -90,10 +91,10 @@ def sub(pages:str, emptyIDs:list, emptyIDsIdx, emptyLock, emptyMap:dict, input_i
                     des_id = emptyMap[words[1].encode('utf-8')]#이미 아래작업을 해준적이 있으면 그냥 꺼내온다
                 else:
                     emptyLock.acquire()
-                    nowId = emptyIDs[emptyIDsIdx]#배열에서 빼서 아이디 확보(정수)
+                    nowId = emptyIDs[emptyIDsIdx[0]]#배열에서 빼서 아이디 확보(정수)
                     emptyMap[nowId] = words[1].encode('utf-8')#확보된 아이디를 키값으로 타이틀 저장
                     des_id = nowId#확보된 아이디를 목표 아이디로 결정
-                    emptyIDsIdx += 1
+                    emptyIDsIdx[0] += 1
                     emptyLock.release()
             des_id = int(des_id)
             # if des_id in redirect_dict:
@@ -106,11 +107,14 @@ def sub(pages:str, emptyIDs:list, emptyIDsIdx, emptyLock, emptyMap:dict, input_i
             #         emptyMap[nowId] = des_id.encode('utf-8')
             #         des_id = nowId
             #         emptyIDsIdx += 1
-            #         emptyLock.release()        
+            #         emptyLock.release()
+            # #####        
             anker_ids[j - 1] = des_id
-        ret_texts[int(id)] = anker_texts
-        ret_ids[int(id)] = anker_ids
-        ret_size[int(id)] = nowSize
+        np.save('./n/' + str(id) + '_anker_texts', anker_texts)
+        np.save('./n/' + str(id) + 'ret_ids', anker_ids)
+        #ret_texts[int(id)] = anker_texts
+        #ret_ids[int(id)] = anker_ids
+        #ret_size[int(id)] = nowSize
         pages[i] = ''
     return
 
@@ -119,7 +123,7 @@ if __name__ == '__main__':
     print("Start..")
     #arr = g.create_dataset('idToTitle', data=np.full(MAXID, '???',dtype=object))
 
-    target = h5.File("./Dump0413.hdf5", 'r')
+    target = h5.File("D:\Dump0413.hdf5", 'r')
     titleToId_dict = ast.literal_eval(target['/Titles'].attrs['titleToId'])
     target.close()
     print("Load Target complite..")
@@ -132,8 +136,8 @@ if __name__ == '__main__':
     emptyIDs = np.load('./Raw/03EmptyIDs.npy')
 
     print("Start MultiProcess")
-    pages = pages[1:]#0번째는 항상 버린다.
-    pagess = splitList(pages, 24)
+    pages = pages[1:1633157]#0번째는 항상 버린다.
+    pagess = splitList(pages, 12)
     pros = []
 
     m = Manager()
@@ -142,7 +146,7 @@ if __name__ == '__main__':
     dictIds = m.dict()
     dictSizes = m.dict()
 
-    emptyIDsIdx = 0
+    emptyIDsIdx = [0]
     emptyLock = Lock()
     emptyMap = m.dict()
 
@@ -161,30 +165,41 @@ if __name__ == '__main__':
         print("\rProcess : p3 : %.4f%%" % ((float(i)/len(pros)) * 100), end="")
         i += 1
     
+    del(titleToId_dict)
+    del(emptyIDs)
+    del(pagess)
+    del(pages)
+    gc.collect()
+
     print('\nUnproxy..')
     listInIds = unproxy_list(listInIds)
     dictTexts = unproxy_dict(dictTexts)
     dictIds = unproxy_dict(dictIds)
     dictSizes = unproxy_dict(dictSizes)
     emptyMap = unproxy_dict(emptyMap)
+    emptyIDsIdx = unproxy_dict(emptyIDsIdx)
     print('\nMerge and writing..')
 
     emp = open("./Raw/04EmptyMap", 'w', encoding='UTF-8')
     emp.write(str(emptyMap))
     emp.close()
     emp = open("./Raw/04EmptySize", 'w', encoding='UTF-8')
-    emp.write(str(emptyIDsIdx))
+    emp.write(str(emptyIDsIdx[0]))
     emp.close()
 
-    target = h5.File("./Dump0413.hdf5", 'r+')
+    del(emptyMap)
+    del(emptyIDsIdx)
+    gc.collect()
+
+    target = h5.File("D:\Dump0413.hdf5", 'r+')
     #target.create_group('Ankers')
     g = target['Ankers']
 
-    print('\n\nWrite start..\n')
+    print('\nWrite start..\n')
     i = 0
     for id in listInIds:
         print("\rProcess : p3 : %.4f%%" % ((float(i)/len(listInIds)) * 100), end="")
-
+        
         now = g.create_group(str(id))#가상경로
         now.attrs['size'] = dictSizes[id]
         #now.attrs.create('size', data=dictSizes[id])
@@ -202,9 +217,11 @@ if __name__ == '__main__':
             anker_ids[j] = a2[j]
         #now.create_dataset('anker_texts', data=dictTexts[id], dtype=object)
         #now.create_dataset('anker_ids', data=dictIds[id], dtype=np.int32)
+        
         del(dictTexts[id])
         del(dictIds[id])
         del(dictSizes[id])
+        #gc.collect()
         i += 1
     target.close()
     input("\nAll complite..")

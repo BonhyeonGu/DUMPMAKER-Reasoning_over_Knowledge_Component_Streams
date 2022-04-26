@@ -12,21 +12,8 @@ out : 03Redirects_dict
 
 ### p1  
 in : 01Titles  
-out : Dump
+out : 
 
 ## 2:주인없는 ID가 나열된 배열
 
-### p2
-in : Dump  
-out : 03EmptyIDs.npy
 
-## 3:ID별로 앵커들을 기록, 오류 ID 발견시 주인없는 ID를 사용 후 빈페이지 취급
-
-### p3_multi
-in : Dump, 03Ankers_Merge, 03Redirects_dict, 03EmptyIDs.npy  
-out : 04EmptyMap, 04EmptySize  
-edit : Dump
-
-## 4:빈 페이지 사이즈 속성 0을 추가
-in : Dump, 04EmptyMap, 04EmptySize  
-edit : Dump
