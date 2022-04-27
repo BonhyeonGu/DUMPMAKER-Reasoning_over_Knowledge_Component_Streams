@@ -100,7 +100,6 @@ if __name__ == '__main__':
     m = Manager()
     emptyIDsIdx = m.list()
     emptyIDsIdx.append(0)
-
     emptyLock = Lock()
     emptyMap = m.dict()
 
