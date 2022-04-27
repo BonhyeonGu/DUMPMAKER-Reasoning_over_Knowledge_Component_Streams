@@ -114,10 +114,10 @@ if __name__ == '__main__':
     with open(LOCAL + '99EmptyIdToTitle.pkl', 'wb') as f:
         pickle.dump(emptyIdToTitle, f)
     del(emptyIdToTitle)
-    
+    gc.collect()
     print('\nSort..')
     arr = sorted(arr, key=lambda arr: (arr[0], arr[2]))
-    print('\nSave..')
+    print('Save..')
     with open(LOCAL + 'arr.pkl', 'wb') as f:
         pickle.dump(arr, f)
     input("All Complite..")
