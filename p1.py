@@ -1,4 +1,5 @@
 import numpy as np
+import pickle
 MAXINDEX = 16331570
 MAXID = 70355180
 print("Start..")
@@ -34,11 +35,9 @@ for i in range(linesSize):
     titleToId[title] = id
 #g.create_dataset('titleToId', data=np.array([str(d)] ,dtype=object))
 
-np.save('Raw/99IdToTitle.npy', emptyArr)
+np.save('Raw/99IdToTitle.npy', IdToTitle)
 
-f = open("./Raw/99TitleToId", 'w', encoding='UTF-8')
-f.write(str(titleToId))
-f.close()
-
+with open("./Raw/99TitleToId.pkl", 'wb') as f:
+        pickle.dump(titleToId, f)
 np.save('Raw/99EmptyIDs.npy', emptyArr)
 input("\nAll complite..")

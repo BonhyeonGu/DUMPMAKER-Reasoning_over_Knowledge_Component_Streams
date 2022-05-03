@@ -1,7 +1,4 @@
-from calendar import LocaleHTMLCalendar
 import numpy as np
-import os
-from pkg_resources import compatible_platforms
 from multiprocessing import Process, freeze_support, Manager, Lock
 from multiprocessing.managers import DictProxy, ListProxy
 import pickle
@@ -53,11 +50,11 @@ def sub(pages:str, emptyIDs:list, emptyIDsIdx, emptyLock, emptyTitleToId:dict, e
                     popId = emptyIDs[emptyIDsIdx[0]]#배열에서 빼서 아이디 확보(정수)
                     emptyTitleToId[ankerTitle] = popId#확보된 아이디를 키값으로 타이틀 저장
                     emptyIdToTitle[popId] = ankerTitle
-                    ankerLink_id = str(popId)#확보된 아이디를 목표 아이디로 결정
+                    ankerLink_id = popId#확보된 아이디를 목표 아이디로 결정
                     emptyIDsIdx[0] += 1
                     emptyLock.release()
             arrLock.acquire()
-            arr.append((ankerTitle, ankerLink_id, titleId))
+            arr.append((ankerTitle, ankerLink_id, int(titleId)))
             arrLock.release()
         pages[i] = ''
     return
@@ -116,8 +113,9 @@ if __name__ == '__main__':
     del(emptyIdToTitle)
     gc.collect()
     print('\nSort..')
+
     arr = sorted(arr, key=lambda arr: (arr[0], arr[2]))
     print('Save..')
-    with open(LOCAL + 'arr.pkl', 'wb') as f:
+    with open(LOCAL + '99Arr.pkl', 'wb') as f:
         pickle.dump(arr, f)
     input("All Complite..")
